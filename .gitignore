@@ -1,2 +1,5 @@
 /memory-bank
 /node_modules
+.next/
+node_modules/
+*.tsbuildinfo
