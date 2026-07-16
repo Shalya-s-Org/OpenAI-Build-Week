@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useState, useSyncExternalStore } from "react";
-import type { MeetingExtraction } from "@/lib/types";
+import type { ActionStatus, MeetingExtraction } from "@/lib/types";
 
 const STORAGE_KEY = "meeting-to-momentum:last-extraction";
 const SAMPLE_TRANSCRIPT = `Decision: Keep the launch scope focused on the core review workflow.
@@ -10,6 +10,11 @@ Action: Validate API rate-limit behavior — Owner: Aarav Patel — Due: today
 Blocker: Staging credentials are still awaiting approval — Waiting on: Maya Chen`;
 let cachedSavedValue: string | null | undefined;
 let cachedSavedExtraction: MeetingExtraction | null = null;
+const TEAM_MEMBERS = ["Maya Chen", "Aarav Patel", "Nora Williams"];
+const ACTION_STATUSES: { value: ActionStatus; label: string }[] = [
+  { value: "not_started", label: "Not started" }, { value: "in_progress", label: "In progress" },
+  { value: "blocked", label: "Blocked" }, { value: "complete", label: "Complete" },
+];
 
 function subscribeToSavedExtraction(callback: () => void) {
   window.addEventListener("storage", callback);
@@ -71,23 +76,38 @@ export function MeetingIntelligence() {
       </form>
 
       <article className="extraction-card" aria-live="polite">
-        {!extraction ? <div className="empty-extraction"><p className="eyebrow">Ready to review</p><h3>Your extracted decisions, actions, and blockers will appear here.</h3><p>Every item includes the exact supporting quote and a confidence score.</p></div> : <ExtractionReview result={extraction} />}
+        {!extraction ? <div className="empty-extraction"><p className="eyebrow">Ready to review</p><h3>Your extracted decisions, actions, and blockers will appear here.</h3><p>Every item includes the exact supporting quote and a confidence score.</p></div> : <ExtractionReview key={extraction.id} result={extraction} />}
       </article>
     </div>
   </section>;
 }
 
 function ExtractionReview({ result }: { result: MeetingExtraction }) {
+  const [review, setReview] = useState(() => ({ ...result, actions: result.actions.map((action) => ({ ...action, status: action.status ?? ((action.title.toLowerCase().includes("validate") ? "blocked" : "in_progress") as ActionStatus) })), blockers: result.blockers.map((blocker) => ({ ...blocker, actionId: blocker.actionId ?? result.actions[0]?.id ?? "" })) }));
+
+  function save(nextReview: typeof review) {
+    setReview(nextReview);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextReview));
+  }
+
+  function updateAction(id: string, updates: Partial<(typeof review.actions)[number]>) { save({ ...review, actions: review.actions.map((action) => action.id === id ? { ...action, ...updates } : action) }); }
+  function updateDecision(id: string, statement: string) { save({ ...review, decisions: review.decisions.map((decision) => decision.id === id ? { ...decision, statement } : decision) }); }
+  function updateBlocker(id: string, updates: Partial<(typeof review.blockers)[number]>) { save({ ...review, blockers: review.blockers.map((blocker) => blocker.id === id ? { ...blocker, ...updates } : blocker) }); }
+
   return <>
-    <div className="review-heading"><div><p className="eyebrow">Extraction complete</p><h3>{result.meetingTitle}</h3></div><span className="save-indicator">Saved locally</span></div>
-    <p className="review-summary">{result.summary}</p>
-    <ExtractionGroup title="Actions" items={result.actions.map((item) => ({ id: item.id, value: item.title, metadata: [item.owner, item.dueDate].filter(Boolean).join(" · "), confidence: item.confidence, quote: item.sourceQuote }))} />
-    <ExtractionGroup title="Decisions" items={result.decisions.map((item) => ({ id: item.id, value: item.statement, metadata: "", confidence: item.confidence, quote: item.sourceQuote }))} />
-    <ExtractionGroup title="Blockers" items={result.blockers.map((item) => ({ id: item.id, value: item.description, metadata: item.owner ? `Waiting on ${item.owner}` : "", confidence: item.confidence, quote: item.sourceQuote }))} />
+    <div className="review-heading"><div><p className="eyebrow">Review before momentum</p><h3>{review.meetingTitle}</h3></div><span className="save-indicator">Saved locally</span></div>
+    <p className="review-summary">Correct the extraction, set ownership, and connect blockers before sharing the next steps.</p>
+    <section className="extraction-group"><div className="group-title"><h4>Actions</h4><span>{review.actions.length}</span></div><ul className="workflow-list">{review.actions.map((action) => <li className="workflow-item" key={action.id}>
+      <label className="complete-toggle"><input type="checkbox" checked={action.status === "complete"} onChange={(event) => updateAction(action.id, { status: event.target.checked ? "complete" : "not_started" })} /><span aria-hidden="true" /></label>
+      <div className="workflow-fields"><input aria-label="Action title" value={action.title} onChange={(event) => updateAction(action.id, { title: event.target.value })} /><div className="workflow-controls"><select aria-label="Action owner" value={action.owner ?? ""} onChange={(event) => updateAction(action.id, { owner: event.target.value || null })}><option value="">Unassigned</option>{TEAM_MEMBERS.map((member) => <option key={member} value={member}>{member}</option>)}</select><input aria-label="Action due date" value={action.dueDate ?? ""} placeholder="Due date" onChange={(event) => updateAction(action.id, { dueDate: event.target.value || null })} /><select aria-label="Action status" value={action.status} onChange={(event) => updateAction(action.id, { status: event.target.value as ActionStatus })}>{ACTION_STATUSES.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select></div>
+        <Evidence quote={action.sourceQuote} confidence={action.confidence} />
+      </div>
+    </li>)}</ul></section>
+    <section className="extraction-group"><div className="group-title"><h4>Decisions</h4><span>{review.decisions.length}</span></div><ul className="workflow-list">{review.decisions.map((decision) => <li className="workflow-item decision-workflow" key={decision.id}><div className="workflow-fields"><input aria-label="Decision statement" value={decision.statement} onChange={(event) => updateDecision(decision.id, event.target.value)} /><Evidence quote={decision.sourceQuote} confidence={decision.confidence} /></div></li>)}</ul></section>
+    <section className="extraction-group"><div className="group-title"><h4>Blockers & dependencies</h4><span>{review.blockers.length}</span></div><ul className="workflow-list">{review.blockers.map((blocker) => <li className="workflow-item blocker-workflow" key={blocker.id}><div className="workflow-fields"><input aria-label="Blocker description" value={blocker.description} onChange={(event) => updateBlocker(blocker.id, { description: event.target.value })} /><div className="workflow-controls"><select aria-label="Blocker owner" value={blocker.owner ?? ""} onChange={(event) => updateBlocker(blocker.id, { owner: event.target.value || null })}><option value="">No owner</option>{TEAM_MEMBERS.map((member) => <option key={member} value={member}>{member}</option>)}</select><select aria-label="Impacted action" value={blocker.actionId} onChange={(event) => updateBlocker(blocker.id, { actionId: event.target.value })}><option value="">Select impacted action</option>{review.actions.map((action) => <option key={action.id} value={action.id}>{action.title}</option>)}</select></div><Evidence quote={blocker.sourceQuote} confidence={blocker.confidence} /></div></li>)}</ul></section>
   </>;
 }
 
-type ReviewItem = { id: string; value: string; metadata: string; confidence: number; quote: string };
-function ExtractionGroup({ title, items }: { title: string; items: ReviewItem[] }) {
-  return <section className="extraction-group"><div className="group-title"><h4>{title}</h4><span>{items.length}</span></div>{items.length === 0 ? <p className="no-items">None identified</p> : <ul>{items.map((item) => <li key={item.id}><div><strong>{item.value}</strong>{item.metadata && <span>{item.metadata}</span>}</div><span className="confidence">{Math.round(item.confidence * 100)}%</span><blockquote>{item.quote}</blockquote></li>)}</ul>}</section>;
+function Evidence({ quote, confidence }: { quote: string; confidence: number }) {
+  return <div className="evidence"><span className="confidence">{Math.round(confidence * 100)}% confidence</span><blockquote>{quote}</blockquote></div>;
 }

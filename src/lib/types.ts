@@ -16,6 +16,7 @@ export interface ExtractionAction {
   dueDate: string | null;
   confidence: number;
   sourceQuote: string;
+  status?: ActionStatus;
 }
 
 export interface ExtractionDecision {
@@ -31,6 +32,7 @@ export interface ExtractionBlocker {
   owner: string | null;
   confidence: number;
   sourceQuote: string;
+  actionId?: string;
 }
 
 export interface MeetingExtraction {
