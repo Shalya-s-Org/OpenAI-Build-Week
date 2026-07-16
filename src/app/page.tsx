@@ -1,4 +1,5 @@
 import { demoActions, demoBlockers, demoDecisions, demoMeeting, workspaceMembers } from "@/lib/demo-data";
+import { MeetingIntelligence } from "@/components/meeting-intelligence";
 
 const statusLabel = { not_started: "Not started", in_progress: "In progress", blocked: "Blocked", complete: "Complete" } as const;
 
@@ -8,13 +9,15 @@ export default function Home() {
   return <main className="app-shell">
     <header className="topbar">
       <a className="brand" href="#overview" aria-label="Meeting-to-Momentum home"><span className="brand-mark" aria-hidden="true">→</span><span>Meeting-to-Momentum</span></a>
-      <button className="primary-button" type="button">New meeting <span aria-hidden="true">→</span></button>
+      <a className="primary-button" href="#meeting-intelligence">New meeting <span aria-hidden="true">→</span></a>
     </header>
 
     <section className="page-intro" id="overview" aria-labelledby="page-title">
       <div><p className="eyebrow">Workspace overview</p><h1 id="page-title">Clarity after the meeting.</h1><p className="intro-copy">Move decisions forward with an accountable, visible next step for every conversation.</p></div>
       <div className="member-stack" aria-label="Meeting attendees">{workspaceMembers.map((member) => <span className="avatar" key={member.id} title={member.name}>{member.initials}</span>)}</div>
     </section>
+
+    <MeetingIntelligence />
 
     <section className="metric-grid" aria-label="Momentum summary">
       <article className="metric-card"><p className="eyebrow">Open actions</p><strong>{demoActions.length}</strong><span>Across 1 active meeting</span></article>
