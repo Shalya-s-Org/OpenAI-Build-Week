@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useState, useSyncExternalStore } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import type { ActionStatus, MeetingExtraction } from "@/lib/types";
 
 const STORAGE_KEY = "meeting-to-momentum:last-extraction";
@@ -8,25 +8,16 @@ const SAMPLE_TRANSCRIPT = `Decision: Keep the launch scope focused on the core r
 Action: Confirm onboarding email sequence — Owner: Maya Chen — Due: tomorrow
 Action: Validate API rate-limit behavior — Owner: Aarav Patel — Due: today
 Blocker: Staging credentials are still awaiting approval — Waiting on: Maya Chen`;
-let cachedSavedValue: string | null | undefined;
-let cachedSavedExtraction: MeetingExtraction | null = null;
 const TEAM_MEMBERS = ["Maya Chen", "Aarav Patel", "Nora Williams"];
 const ACTION_STATUSES: { value: ActionStatus; label: string }[] = [
   { value: "not_started", label: "Not started" }, { value: "in_progress", label: "In progress" },
   { value: "blocked", label: "Blocked" }, { value: "complete", label: "Complete" },
 ];
 
-function subscribeToSavedExtraction(callback: () => void) {
-  window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
-}
-
 function readSavedExtraction() {
   const saved = window.localStorage.getItem(STORAGE_KEY);
-  if (saved === cachedSavedValue) return cachedSavedExtraction;
-  cachedSavedValue = saved;
-  if (!saved) return (cachedSavedExtraction = null);
-  try { return (cachedSavedExtraction = JSON.parse(saved) as MeetingExtraction); } catch { return (cachedSavedExtraction = null); }
+  if (!saved) return null;
+  try { return JSON.parse(saved) as MeetingExtraction; } catch { return null; }
 }
 
 export function MeetingIntelligence() {
@@ -35,8 +26,12 @@ export function MeetingIntelligence() {
   const [result, setResult] = useState<MeetingExtraction | null>(null);
   const [error, setError] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
-  const savedResult = useSyncExternalStore(subscribeToSavedExtraction, readSavedExtraction, () => null);
+  const [savedResult, setSavedResult] = useState<MeetingExtraction | null>(null);
   const extraction = result ?? savedResult;
+
+  useEffect(() => {
+    setSavedResult(readSavedExtraction());
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,6 +42,7 @@ export function MeetingIntelligence() {
       const payload: MeetingExtraction | { error: string } = await response.json();
       if (!response.ok || "error" in payload) throw new Error("error" in payload ? payload.error : "Extraction failed.");
       setResult(payload);
+      setSavedResult(payload);
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Extraction failed.");
