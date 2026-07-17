@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import type { ActionStatus } from "@/lib/types";
 import { useMomentum } from "@/lib/MomentumContext";
+import { DonutChart } from "./donut-chart";
+import { VelocityChart } from "./velocity-chart";
 
 const statuses: { value: "all" | ActionStatus; label: string }[] = [
   { value: "all", label: "All statuses" },
@@ -81,6 +83,10 @@ export function MomentumDashboard() {
           <strong>{decisions.length}</strong>
           <span>Clear, searchable record</span>
         </article>
+      </div>
+      <div className="charts-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "24px", marginBottom: "32px" }}>
+        <DonutChart actions={actions} />
+        <VelocityChart actions={actions} />
       </div>
       <div className="dashboard-filters">
         <label>
