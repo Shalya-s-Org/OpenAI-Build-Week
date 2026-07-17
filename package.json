@@ -22,7 +22,9 @@
   },
   "homepage": "https://github.com/Shalya-s-Org/OpenAI-Build-Week#readme",
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "next": "^16.2.10",
+    "prisma": "^5.22.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

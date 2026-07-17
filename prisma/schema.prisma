@@ -1,0 +1,63 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model WorkspaceMember {
+  id          String       @id
+  name        String
+  initials    String
+  role        String
+  actionItems ActionItem[]
+  blockers    Blocker[]
+}
+
+model Meeting {
+  id          String       @id
+  title       String
+  occurredAt  String
+  transcript  String
+  summary     String
+  createdAt   DateTime     @default(now())
+  actionItems ActionItem[]
+  decisions   Decision[]
+  blockers    Blocker[]
+}
+
+model ActionItem {
+  id          String           @id
+  title       String
+  ownerId     String?
+  owner       WorkspaceMember? @relation(fields: [ownerId], references: [id])
+  dueDate     String?
+  status      String
+  confidence  Float
+  sourceQuote String
+  meetingId   String
+  meeting     Meeting          @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  blockers    Blocker[]
+}
+
+model Decision {
+  id          String   @id
+  statement   String
+  confidence  Float
+  sourceQuote String
+  meetingId   String
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
+
+model Blocker {
+  id           String           @id
+  description  String
+  ownerId      String?
+  owner        WorkspaceMember? @relation(fields: [ownerId], references: [id])
+  actionItemId String?
+  actionItem   ActionItem?       @relation(fields: [actionItemId], references: [id], onDelete: Cascade)
+  meetingId    String
+  meeting      Meeting          @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
