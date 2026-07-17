@@ -15,6 +15,7 @@ const ACTION_STATUSES: { value: ActionStatus; label: string }[] = [
 ];
 
 function readSavedExtraction() {
+  if (typeof window === "undefined") return null;
   const saved = window.localStorage.getItem(STORAGE_KEY);
   if (!saved) return null;
   try { return JSON.parse(saved) as MeetingExtraction; } catch { return null; }
@@ -30,7 +31,12 @@ export function MeetingIntelligence() {
   const extraction = result ?? savedResult;
 
   useEffect(() => {
-    setSavedResult(readSavedExtraction());
+    const saved = readSavedExtraction();
+    if (saved) {
+      setTimeout(() => {
+        setSavedResult(saved);
+      }, 0);
+    }
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
