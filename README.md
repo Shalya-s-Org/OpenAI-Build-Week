@@ -24,14 +24,14 @@ Meeting-to-Momentum is a local-first workspace for teams that want a meeting to 
 
 This project was built in collaboration with **Codex, powered by GPT-5.6**. The model served as a hands-on engineering partner throughout the prototype:
 
-- Translated the product brief into the Next.js/TypeScript application structure and component boundaries.
-- Implemented the meeting-intelligence workflow, dashboard, review interactions, and responsive UI.
-- Designed the extraction contract for summaries, actions, decisions, blockers, confidence, and source attribution.
-- Added the Prisma data model, SQLite persistence, demo seed data, and API routes for workspace updates.
-- Helped iterate on error states, local fallbacks, and the end-to-end demo experience.
-- Reviewed the implementation and verified the production build.
+- Translated the product brief to the Next.js/TypeScript app layout and component boundaries.
+- Developed the meeting-intelligence workflow, dashboard, review interactions and responsive UI.
+- Created extraction contract for summaries, actions, decisions, blockers, confidence and source attribution.
+- Added Prisma data model, SQLite persistence, demo seed data, API routes for workspace updates
+- Helped iterate on error states, local fallbacks and end-to-end demo experience
+- Validated the production build and went through the implementation.
 
-The application’s runtime extraction path uses the OpenAI API when `OPENAI_API_KEY` is available; it falls back to Gemini when `GEMINI_API_KEY` is configured, then to a deterministic local parser so the prototype remains usable without credentials.
+The application’s runtime extraction path uses the OpenAI API when `OPENAI_API_KEY` is available.
 
 ## Stack
 
@@ -74,8 +74,6 @@ To enable model-backed extraction, create `.env.local` and add one of the follow
 
 ```bash
 OPENAI_API_KEY=your_openai_api_key
-# or
-GEMINI_API_KEY=your_gemini_api_key
 ```
 
 Without an API key, the app still runs using its local pattern-based extraction fallback.
