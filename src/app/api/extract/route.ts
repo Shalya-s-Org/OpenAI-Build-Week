@@ -12,6 +12,17 @@ export async function POST(request: Request) {
 
     const extraction = await extractMeeting(title, transcript);
 
+    // Deduplicate: If extracting "Launch readiness", delete the seeded demo meeting
+    if (extraction.meetingTitle.toLowerCase() === "launch readiness") {
+      try {
+        await db.meeting.delete({
+          where: { id: "meeting-launch" },
+        });
+      } catch (e) {
+        // Ignore if already deleted or doesn't exist
+      }
+    }
+
     // Save to SQLite database
     await db.meeting.upsert({
       where: { id: extraction.id },

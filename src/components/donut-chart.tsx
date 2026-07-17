@@ -20,20 +20,20 @@ interface Segment {
 export function DonutChart({ actions }: DonutChartProps) {
   const [hoveredStatus, setHoveredStatus] = useState<ActionStatus | null>(null);
 
-  const total = actions.length;
-
   const counts: Record<ActionStatus, number> = {
-    not_started: actions.filter((a) => a.status === "not_started").length,
+    complete: actions.filter((a) => a.status === "complete").length,
     in_progress: actions.filter((a) => a.status === "in_progress").length,
     blocked: actions.filter((a) => a.status === "blocked").length,
-    complete: actions.filter((a) => a.status === "complete").length,
+    not_started: actions.filter((a) => a.status === "not_started").length,
   };
+
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
   const statusInfo: Record<ActionStatus, { label: string; color: string }> = {
     complete: { label: "Complete", color: "var(--secondary)" },
     in_progress: { label: "In progress", color: "var(--primary)" },
     blocked: { label: "Blocked", color: "var(--error)" },
-    not_started: { label: "Not started", color: "var(--outline)" },
+    not_started: { label: "Not started", color: "var(--outline, #747688)" },
   };
 
   const radius = 50;
@@ -49,7 +49,7 @@ export function DonutChart({ actions }: DonutChartProps) {
 
     // Calculate stroke properties
     const strokeDasharray = `${percentage * circumference} ${circumference}`;
-    const strokeDashoffset = circumference - (cumulativePercentage * circumference);
+    const strokeDashoffset = -cumulativePercentage * circumference;
 
     cumulativePercentage += percentage;
 
@@ -116,7 +116,6 @@ export function DonutChart({ actions }: DonutChartProps) {
                     strokeWidth={isHovered ? strokeWidth + 3 : strokeWidth}
                     strokeDasharray={seg.strokeDasharray}
                     strokeDashoffset={seg.strokeDashoffset}
-                    strokeLinecap="round"
                     style={{
                       transition: "stroke-width 200ms ease, opacity 200ms ease",
                       cursor: "pointer",
